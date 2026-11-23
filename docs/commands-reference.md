@@ -583,7 +583,7 @@ Run this on the first of each month for every active client to generate the prog
 
 ## /geo aeo
 
-**What it does:** Answer Engine Optimization tuned for nonprofits. Builds a question bank for students, donors and companies; checks every selected page with `scripts/aeo_checker.py` (no AI, deterministic); maps each question to a page as STRONG, WEAK, MISSING, CONFLICT or OVERLOADED; scores AEO (0-100) and per-audience coverage; writes fact-checked, answer-first rewrites with FAQPage JSON-LD.
+**What it does:** Answer Engine Optimization tuned for nonprofits. Builds a question bank for students, donors and companies; checks every selected page with `scripts/aeo_checker.py` (no AI, deterministic); tags each question by topic, intent (informational / commercial / transactional) and branded vs unbranded; maps each question to a page as STRONG, WEAK, MISSING, CONFLICT or OVERLOADED; scores AEO (0-100) and per-audience coverage; writes fact-checked, answer-first rewrites with FAQPage JSON-LD; checks off-site presence (directories, volunteer boards, editorial, community, reference); groups fixes into four impact-ranked action groups. Defines visibility, share of voice, position, sentiment and citation metrics for tracking runs.
 
 **Usage:**
 

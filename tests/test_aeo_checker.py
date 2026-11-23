@@ -152,3 +152,32 @@ def test_accepts_public_address():
     fake = [(None, None, None, None, ("93.184.215.14", 443))]
     with patch("aeo_checker.socket.getaddrinfo", return_value=fake):
         _assert_public_host("https://example.org/")
+
+
+# --- identity, landmark, robots ---------------------------------------------
+
+def test_organization_identity_and_main_landmark():
+    ld = ('<script type="application/ld+json">{"@context":"https://schema.org","@type":"NGO",'
+          '"name":"Desert Literacy","url":"https://desertliteracy.example"}</script>')
+    r = analyze_html(_page("<h1>X</h1>", head=ld))
+    assert r["organization_identity"] is True
+    assert r["main_landmark"] is True
+
+
+def test_missing_identity_and_landmark_flagged():
+    r = analyze_html("<html><body><div><h1>X</h1><p>Text 2026.</p></div></body></html>")
+    assert r["organization_identity"] is False
+    assert r["main_landmark"] is False
+    assert any("Organization/NGO" in i for i in r["page_issues"])
+    assert any("<main>" in i for i in r["page_issues"])
+
+
+def test_robots_disallow_is_respected():
+    import aeo_checker
+    aeo_checker._ROBOTS_CACHE.clear()
+    robots = "User-agent: *\nDisallow: /private/\n"
+    with patch("aeo_checker.safe_fetch_html", return_value=("https://example.org/robots.txt", robots, 200)):
+        assert aeo_checker.robots_allows("https://example.org/volunteer") is True
+        assert aeo_checker.robots_allows("https://example.org/private/x") is False
+        r = aeo_checker.check_url("https://example.org/private/x")
+    assert "robots.txt" in r["error"]

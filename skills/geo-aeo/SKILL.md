@@ -1,7 +1,7 @@
 ---
 name: geo-aeo
 description: Answer Engine Optimization (AEO) for nonprofits. Builds a question bank for three audiences (students, donors, companies), maps each question to the page that should answer it, scores answer coverage and quality, and writes fact-checked answer-first rewrites, FAQs and JSON-LD. Use for "/geo aeo", "AEO", "answer engine", "featured snippet", "People Also Ask", "direct answers", "FAQ rewrite", or when a nonprofit wants its pages to be the answer.
-version: 1.0.0
+version: 1.1.0
 author: geo-seo-claude (nonprofit fork)
 tags: [geo, aeo, answer-engine, featured-snippets, faq, nonprofit]
 allowed-tools: Read, Grep, Glob, Bash, WebFetch, WebSearch, Write
@@ -29,7 +29,7 @@ It is tuned for nonprofits and their three audiences:
 
 | Command | What it does |
 |---|---|
-| `/geo aeo <url>` | Full run: question bank → page mapping → scores → rewrites → outputs |
+| `/geo aeo <url>` | Full run: question bank → page mapping → scores → rewrites → off-site gaps → outputs |
 | `/geo aeo questions <url>` | Question bank only (fast; use before writing new pages) |
 | `/geo aeo page <url>` | One page: structure check + rewrites for that page only |
 
@@ -123,6 +123,29 @@ Target 10–20 questions per audience (fewer for `page` mode). Each question mus
   students volunteer at food banks in Phoenix?", not "Volunteer eligibility").
 - **Specific**: include the cause, city or organization where a real person would.
 - **Answerable in 40–60 words.** Split broad questions.
+- **Carrying real context and constraints.** Who is asking, where, and what limits
+  them changes the answer an AI gives ("…for a 16-year-old with 3 hours a week",
+  "…for a company with 200 employees in Tempe"). A different need is a separate
+  question; a rephrasing of the same need is not. Do not add near-duplicates.
+- **Grouped into 3–5 topics per audience** (for example, for students: eligibility,
+  time commitment, benefits, how to apply). Each question belongs to one topic.
+
+Tag every question with an **intent** and aim for roughly this mix:
+
+| Intent | Share | Nonprofit example |
+|---|---|---|
+| `informational` | ~25% | "How do I start volunteering in literacy programs?" |
+| `commercial` (comparing options) | ~50% | "Which Phoenix literacy nonprofits take high school volunteers?" |
+| `transactional` (ready to act) | ~25% | "How do I sign up to tutor with Desert Literacy?" |
+
+Comparison questions are where an organization gets recommended over others, so
+they get the largest share. Informational "how do I…" questions rarely name any
+organization; add a clause such as "…and which organizations can I do it with?" so
+the answer has a reason to mention one.
+
+Also tag each question `branded` (names the organization) or `unbranded`. Keep
+about 20% branded. Unbranded questions are how new donors, students and companies
+discover an organization; branded ones check that what is said about it is right.
 
 Sources, in this order. Record the source of every question:
 1. `site`: questions the site's own content implies (programs, events, roles).
@@ -165,6 +188,10 @@ Give each question a **priority**:
 - `P1`: decides whether the audience engages (eligibility, legitimacy, how to apply/give/partner)
 - `P2`: shapes the decision (impact, time commitment, benefits)
 - `P3`: nice to have
+
+The intent mix, branded share and topic grouping above follow the prompt-design
+guidance Peec AI publishes for AI visibility tracking (docs.peec.ai, "Setting up
+your prompts"), adapted for nonprofits.
 
 ## Step 4: Map questions to pages
 
@@ -237,13 +264,34 @@ include one (`@type: "NGO"`, with `name`, `url`, `taxID` only if known,
 `nonprofitStatus: "Nonprofit501c3"` only if 501(c)(3) status is stated on the site,
 `areaServed`, `sameAs`).
 
-## Step 7: Output
+## Step 7: Off-site gaps (what answer engines read about the organization elsewhere)
+
+Answer engines build answers from other sites as well as the organization's own.
+Check, with one WebSearch each, whether the organization has a profile or mention
+on the source types below. Record `found` (with URL), `not found`, or `unclear`.
+"Not found" in a search is not proof of absence, so word it as "no profile found".
+
+| Source type | Nonprofit examples to check | Fix if missing |
+|---|---|---|
+| **Directories and ratings** (corporate/listing) | Candid (GuideStar) profile, Charity Navigator, GreatNonprofits, the state charity registry | Claim and complete the profile; the facts must match the website |
+| **Volunteer and job boards** | Idealist, VolunteerMatch, Handshake (internships), LinkedIn page | Post roles there, linking back to the matching page on the site |
+| **Editorial** | Local news, cause-area publications, "best nonprofits in [city]" lists | Press outreach with a specific story or data point |
+| **Community (user-generated)** | Reddit threads in the city or cause subreddit, Quora, local Facebook groups | Genuine participation by staff or volunteers; never fake reviews or posts |
+| **Reference** | Wikipedia, Wikidata | Correct inaccurate facts through the platform's own process; do not write promotional entries |
+
+## Step 8: Output
 
 Write three files to the current directory:
 
 1. **`AEO-<domain>-<YYYY-MM-DD>.md`**: the report for people
    - Summary: AEO Score, per-audience coverage, top 3 fixes
-   - Question table: question, audience, priority, status, page
+   - Action plan, in four groups, each item rated High / Medium / Low expected
+     impact and sorted by it:
+     1. **Fix how AI reads the site** (structure, schema, crawl access, dates)
+     2. **Improve the organization's own pages** (rewrites, new pages, FAQs)
+     3. **Get mentioned elsewhere** (Step 7 gaps)
+     4. **Fix wrong or conflicting claims** (CONFLICT items, outdated directory profiles)
+   - Question table: question, audience, topic, intent, branded, priority, status, page
    - Rewrites (Step 6 format)
    - New pages to create
    - Data the organization must supply (all `[NEEDS DATA]` items)
@@ -266,15 +314,22 @@ Write three files to the current directory:
   },
   "pages": [{"url": "", "structure_score": 0, "issues": []}],
   "questions": [{
-    "id": "q1", "audience": "students", "priority": "P1", "source": "search",
+    "id": "q1", "audience": "students", "topic": "eligibility", "intent": "commercial",
+    "branded": false, "priority": "P1", "source": "search",
     "question": "", "status": "MISSING", "page_url": null,
     "proposed": {"heading": "", "answer": "", "facts": [{"claim": "", "source_url": ""}], "needs_data": []}
   }],
   "new_pages": [{"slug": "", "questions": ["q1"]}],
   "conflicts": [{"question_id": "", "versions": [{"text": "", "source_url": ""}]}],
-  "uncheckable_urls": []
+  "offsite": [{"type": "directory", "name": "Candid", "status": "found", "url": ""}],
+  "actions": [{"group": "read_site", "action": "", "impact": "High"}],
+  "uncheckable_urls": [],
+  "tracking": null
 }
 ```
+
+`tracking` stays `null` unless answer-engine results were actually measured (see
+"Measuring results" below). Never estimate these numbers.
 
 End your reply with the AEO Score, the per-audience coverage, the three
 highest-impact fixes and the file names. Do not paste the full report into chat.
@@ -284,3 +339,30 @@ highest-impact fixes and the file names. Do not paste the full report into chat.
 When an earlier `aeo-<domain>.json` exists in the directory, load it, keep the
 same question IDs where the question is unchanged, and add a "Change since
 <date>" column to the report. This is the monthly progress view for clients.
+
+## Measuring results (definitions for tracking)
+
+This skill prepares pages; it does not query ChatGPT, Perplexity, Gemini or Google.
+When a tracking run does send the question bank to answer engines (a separate script
+or service, run on a schedule), report results with these standard definitions so
+numbers are comparable across months and tools:
+
+| Metric | Definition |
+|---|---|
+| **Visibility** | Answers that mention the organization ÷ all answers, as a %. Mentioned in 4 of 10 answers = 40%. |
+| **Share of voice** | The organization's mentions ÷ mentions of all tracked organizations (it plus named peers), as a %. 4 mentions vs a peer's 12 = 25%. High visibility can still mean low share of voice. |
+| **Position** | Where the organization appears among the organizations named in an answer (1 = first), averaged over the answers that mention it. |
+| **Sentiment** | Tone of what the answer says about the organization: positive, neutral or negative. |
+| **Cited** | Answers that link to one of the organization's URLs ÷ all answers. |
+| **Accuracy** | Answers that state a fact about the organization that contradicts its site ÷ answers that mention it. Each one becomes a "Fix wrong claims" action. |
+
+Rules: run the same questions on the same engines each period; record the date,
+engine and country; answers vary between runs, so report trends over several runs,
+never a single result as "the ranking". Fill the JSON `tracking` field as
+`{"date": "", "engines": [], "runs": 0, "visibility": 0, "share_of_voice": 0,
+"position": 0, "sentiment": {"positive": 0, "neutral": 0, "negative": 0},
+"cited": 0, "accuracy_issues": 0, "peers": []}`.
+
+The visibility, share of voice and position definitions match those Peec AI
+publishes in its documentation (docs.peec.ai, "Understanding your metrics" and
+"Share of Voice"), so client reports stay comparable with commercial trackers.

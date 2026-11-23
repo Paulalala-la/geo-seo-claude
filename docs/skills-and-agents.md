@@ -318,6 +318,7 @@ These five agents run simultaneously during a `/geo audit` to reduce total runti
 | `scripts/llmstxt_generator.py` | Validates an existing `llms.txt` against the spec (H1 title, blockquote description, H2 sections, absolute URLs, descriptions) and generates a new file from site crawl data. | geo-llmstxt |
 | `scripts/generate_pdf_report.py` | Generates a multi-page PDF from a JSON audit data file using ReportLab. Renders score gauges, bar charts, color-coded tables, and an action plan. Accepts the JSON file path as a CLI argument or via stdin. Requires `reportlab`. | geo-report-pdf |
 | `scripts/crm_dashboard.py` | Renders a rich terminal dashboard for the prospect CRM. Reads `~/.geo-prospects/prospects.json` and displays pipeline stages, MRR, and prospect detail views. Requires `rich`. | geo-prospect |
+| `scripts/aeo_checker.py` | Deterministic (no-AI) answer-engine structure checks: question headings, answer-first paragraphs and their length (40-60 words / 60-120 CJK characters), weak openers, specific facts, entity naming, FAQPage schema vs visible text, freshness signals, Organization identity, `<main>` landmark, and a 0-100 structure score. Respects robots.txt, waits 1s between URLs, and refuses non-public addresses so it can back a web service. Provides `analyze_html()` and `safe_fetch_html()`. | geo-aeo |
 
 ---
 

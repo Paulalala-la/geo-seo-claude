@@ -26,6 +26,8 @@ import json
 import re
 import socket
 import sys
+import time
+import urllib.robotparser
 from datetime import datetime, timezone
 from urllib.parse import urljoin, urlparse
 
@@ -43,6 +45,7 @@ USER_AGENT = (
 MAX_BYTES = 5 * 1024 * 1024  # 5 MB
 MAX_REDIRECTS = 5
 TIMEOUT = 20
+REQUEST_DELAY_SECONDS = 1.0  # repo crawl quality gate: 1s between requests
 
 # Ideal direct-answer length (the first paragraph after a question heading).
 ANSWER_MIN_WORDS, ANSWER_MAX_WORDS = 40, 60
@@ -299,6 +302,12 @@ def analyze_html(html: str, url: str | None = None, entity: str | None = None) -
     all_types = sorted({t for n in jsonld for t in _types(n)})
     speakable = any("speakable" in n for n in jsonld)
 
+    # Machine-readable identity and main-content landmark (agent-readiness basics)
+    identity_types = {"Organization", "NGO", "NonprofitOrganization", "WebSite", "LocalBusiness", "Corporation"}
+    organization_identity = any(
+        identity_types & set(_types(n)) and n.get("name") and n.get("url") for n in jsonld)
+    main_landmark = bool(soup.find(["main", "article"]) or soup.find(attrs={"role": "main"}))
+
     # ---- Structure score (0-100). Structure only; not a ranking. ----
     n_q = len(question_sections)
     answered = [q for q in question_sections if q["answer"].get("present")]
@@ -328,6 +337,10 @@ def analyze_html(html: str, url: str | None = None, entity: str | None = None) -
         page_issues.append("No machine-readable date (dateModified, <time datetime>); add a visible 'last updated' date.")
     if jsonld_errors:
         page_issues.extend(jsonld_errors)
+    if not organization_identity:
+        page_issues.append("No Organization/NGO (or WebSite) JSON-LD with both name and url; AI systems cannot confirm who the page is about.")
+    if not main_landmark:
+        page_issues.append("No <main> or <article> element; main content is harder for machines to separate from navigation.")
 
     return {
         "url": url,
@@ -341,6 +354,8 @@ def analyze_html(html: str, url: str | None = None, entity: str | None = None) -
                        "not_visible_on_page": faq_not_visible},
         "schema_types": all_types,
         "speakable": speakable,
+        "organization_identity": organization_identity,
+        "main_landmark": main_landmark,
         "freshness_signals": dates,
         "structure_score": structure_score,
         "structure_score_components": {k: round(v, 1) for k, v in components.items()},
@@ -349,8 +364,31 @@ def analyze_html(html: str, url: str | None = None, entity: str | None = None) -
     }
 
 
+_ROBOTS_CACHE: dict[str, urllib.robotparser.RobotFileParser | None] = {}
+
+
+def robots_allows(url: str) -> bool:
+    """Respect robots.txt (cached per host). A missing or unreadable robots.txt allows."""
+    parsed = urlparse(url)
+    base = f"{parsed.scheme}://{parsed.netloc}"
+    if base not in _ROBOTS_CACHE:
+        parser = None
+        try:
+            _, text, status = safe_fetch_html(base + "/robots.txt", timeout=10)
+            if status == 200 and "<html" not in text[:500].lower():
+                parser = urllib.robotparser.RobotFileParser()
+                parser.parse(text.splitlines())
+        except (UnsafeURLError, requests.RequestException):
+            parser = None
+        _ROBOTS_CACHE[base] = parser
+    parser = _ROBOTS_CACHE[base]
+    return True if parser is None else parser.can_fetch(USER_AGENT, url)
+
+
 def check_url(url: str, entity: str | None = None) -> dict:
     try:
+        if not robots_allows(url):
+            return {"url": url, "error": "Disallowed by robots.txt; not fetched."}
         final_url, html, status = safe_fetch_html(url)
     except (UnsafeURLError, requests.RequestException) as exc:
         return {"url": url, "error": str(exc)}
@@ -373,7 +411,11 @@ def main(argv: list[str] | None = None) -> int:
         with open(args.html_file, encoding="utf-8", errors="replace") as fh:
             results = [analyze_html(fh.read(), args.url or args.html_file, args.entity)]
     elif args.urls:
-        results = [check_url(u, args.entity) for u in args.urls]
+        results = []
+        for i, u in enumerate(args.urls):
+            if i:
+                time.sleep(REQUEST_DELAY_SECONDS)
+            results.append(check_url(u, args.entity))
     else:
         p.print_help()
         return 1
