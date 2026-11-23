@@ -6,7 +6,7 @@ The repository is structured to seamlessly provide GEO+SEO support by using Clau
 geo-seo-claude/
 ├── geo/                          # Main skill orchestrator
 │   └── SKILL.md                  # Primary skill file with commands & routing
-├── skills/                       # 13 specialized sub-skills
+├── skills/                       # 16 specialized sub-skills
 │   ├── geo-audit/                # Full audit orchestration & scoring
 │   ├── geo-citability/           # AI citation readiness scoring
 │   ├── geo-crawlers/             # AI crawler access analysis

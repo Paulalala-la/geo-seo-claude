@@ -30,6 +30,7 @@ allowed-tools: Read, Grep, Glob, Bash, WebFetch, Write
 | `/geo llmstxt <url>` | Analyze or generate llms.txt file |
 | `/geo brands <url>` | Scan brand mentions across AI-cited platforms |
 | `/geo platforms <url>` | Platform-specific optimization (ChatGPT, Perplexity, Google AIO) |
+| `/geo aeo <url>` | Answer Engine Optimization: question bank for students, donors and companies, answer coverage score, fact-checked answer-first rewrites + FAQ JSON-LD |
 | `/geo schema <url>` | Detect, validate, and generate structured data |
 | `/geo technical <url>` | Traditional technical SEO audit |
 | `/geo content <url>` | Content quality and E-E-A-T assessment |
@@ -116,7 +117,7 @@ Adjust recommendations based on detected type. Local businesses need LocalBusine
 
 ---
 
-## Sub-Skills (14 Specialized Components)
+## Sub-Skills (16 Specialized Components)
 
 | # | Skill | Directory | Purpose |
 |---|-------|-----------|---------|
@@ -134,6 +135,8 @@ Adjust recommendations based on detected type. Local businesses need LocalBusine
 | 12 | geo-proposal | `skills/geo-proposal/` | Auto-generate client proposals from audit data |
 | 13 | geo-compare | `skills/geo-compare/` | Monthly delta tracking and progress reports |
 | 14 | geo-update | `skills/geo-update/` | Pull latest updates from upstream repository |
+| 15 | geo-report-pdf | `skills/geo-report-pdf/` | Professional PDF report with charts and scores |
+| 16 | geo-aeo | `skills/geo-aeo/` | Answer Engine Optimization for nonprofits (questions, coverage, rewrites) |
 
 ---
 
@@ -158,6 +161,7 @@ All commands generate structured output:
 | `/geo audit` | `GEO-AUDIT-REPORT.md` |
 | `/geo page` | `GEO-PAGE-ANALYSIS.md` |
 | `/geo citability` | `GEO-CITABILITY-SCORE.md` |
+| `/geo aeo` | `AEO-<domain>-<date>.md`, `aeo-<domain>-snippets.html`, `aeo-<domain>.json` |
 | `/geo crawlers` | `GEO-CRAWLER-ACCESS.md` |
 | `/geo llmstxt` | `llms.txt` (ready to deploy) |
 | `/geo brands` | `GEO-BRAND-MENTIONS.md` |

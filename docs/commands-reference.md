@@ -17,6 +17,7 @@ This file documents every command in the `geo-seo-claude` skill bundle. Commands
 | `/geo llmstxt <url>` | Analyze an existing llms.txt or generate one from scratch |
 | `/geo brands <url>` | Scan brand mentions across AI-cited platforms |
 | `/geo platforms <url>` | Platform-specific readiness scores (AIO, ChatGPT, Perplexity, Gemini, Copilot) |
+| `/geo aeo <url>` | Answer Engine Optimization for nonprofits: question bank, answer coverage score, answer-first rewrites |
 
 **Diagnostics** — targeted technical and content checks
 
@@ -577,6 +578,26 @@ Writes `~/.geo-prospects/reports/<domain>-monthly-<YYYY-MM>.md`. Prints a summar
 **When to use it**
 
 Run this on the first of each month for every active client to generate the progress report that justifies the retainer.
+
+---
+
+## /geo aeo
+
+**What it does:** Answer Engine Optimization tuned for nonprofits. Builds a question bank for students, donors and companies; checks every selected page with `scripts/aeo_checker.py` (no AI, deterministic); maps each question to a page as STRONG, WEAK, MISSING, CONFLICT or OVERLOADED; scores AEO (0-100) and per-audience coverage; writes fact-checked, answer-first rewrites with FAQPage JSON-LD.
+
+**Usage:**
+
+```
+/geo aeo https://example.org
+/geo aeo questions https://example.org
+/geo aeo page https://example.org/volunteer
+```
+
+**Outputs:** `AEO-<domain>-<date>.md`, `aeo-<domain>-snippets.html`, `aeo-<domain>.json`
+
+**Standalone checker:** `python3 scripts/aeo_checker.py <url> [<url> ...] --entity "Org Name"` (or `--html-file page.html`). It refuses non-public addresses, so it is safe to call from a web backend with user-submitted URLs.
+
+**Accuracy rules:** facts only from fetched pages or the user, `[NEEDS DATA]` placeholders instead of invented numbers, no tax or ranking promises, conflicts flagged rather than resolved.
 
 ---
 
